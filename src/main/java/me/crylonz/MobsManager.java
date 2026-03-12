@@ -18,8 +18,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Logger;
 
 public class MobsManager extends JavaPlugin implements Listener {
@@ -30,6 +34,8 @@ public class MobsManager extends JavaPlugin implements Listener {
 
     public static boolean worldGuardDetection;
     public static FileManager fileManager;
+    private static final Map<String, String> ENTITY_TYPE_ALIASES = createEntityTypeAliases();
+    private static final Set<String> NON_USEFUL_ENTITY_TYPES = createNonUsefulEntityTypes();
 
     static {
         ConfigurationSerialization.registerClass(MobsData.class, "MobsData");
@@ -64,6 +70,9 @@ public class MobsManager extends JavaPlugin implements Listener {
         } else {
             // Merging maybe new world configuration with existing one
             ArrayList<MobsData> tmp = (ArrayList<MobsData>) fileManager.getMobsDataConfig().get("mobs");
+            if (tmp != null) {
+                tmp.forEach(mobData -> mobData.setName(normalizeEntityTypeName(mobData.getName())));
+            }
             mobsData.removeAll(tmp);
             mobsData.addAll(tmp);
         }
@@ -110,7 +119,7 @@ public class MobsManager extends JavaPlugin implements Listener {
             Optional<Boolean> isCancelled = mobsData
                     .stream()
                     .filter(mobsData -> mobsData.getWorldName().equalsIgnoreCase(e.getEntity().getWorld().getName()))
-                    .filter(mobsData -> mobsData.getName().equalsIgnoreCase(e.getEntityType().name()))
+                    .filter(mobsData -> matchesEntityTypeName(mobsData.getName(), e.getEntityType()))
                     .findFirst()
                     .map(mobData -> {
                         if (!mobData.isAllSpawn()) {
@@ -158,7 +167,7 @@ public class MobsManager extends JavaPlugin implements Listener {
                         .forEach(entity -> {
                             mobsData
                                     .stream()
-                                    .filter(mobData -> mobData.getName().equalsIgnoreCase(entity.getName()))
+                                    .filter(mobData -> matchesEntityTypeName(mobData.getName(), entity.getType()))
                                     .filter(mobData -> mobData.getWorldName().equalsIgnoreCase(entity.getWorld().getName()))
                                     .filter(mobsData -> mobsData.getWorldName().equalsIgnoreCase(entity.getWorld().getName()))
                                     .forEach(mobData -> {
@@ -170,7 +179,7 @@ public class MobsManager extends JavaPlugin implements Listener {
 
                 for (Entity entity : e.getChunk().getEntities()) {
                     for (MobsData mobData : mobsData) {
-                        if (entity.getName().equalsIgnoreCase(mobData.getName())) {
+                        if (matchesEntityTypeName(mobData.getName(), entity.getType())) {
                             if (!mobData.isAllSpawn() || !mobData.isNaturalSpawn()) {
                                 entity.remove();
                                 break;
@@ -193,61 +202,113 @@ public class MobsManager extends JavaPlugin implements Listener {
     }
 
     public static boolean asMyEnum(String str) {
-        for (EntityType me : EntityType.values()) {
-            if (me.name().equalsIgnoreCase(str))
-                return true;
-        }
-        return false;
+        return resolveEntityType(str) != null;
     }
 
     public static boolean isUsefulEntity(EntityType e) {
+        return !NON_USEFUL_ENTITY_TYPES.contains(normalizeEntityTypeName(e.name()));
+    }
 
-        return e != EntityType.DROPPED_ITEM &&
-                e != EntityType.EXPERIENCE_ORB &&
-                e != EntityType.AREA_EFFECT_CLOUD &&
-                e != EntityType.EGG &&
-                e != EntityType.LEASH_HITCH &&
-                e != EntityType.PAINTING &&
-                e != EntityType.ARROW &&
-                e != EntityType.SNOWBALL &&
-                e != EntityType.FIREBALL &&
-                e != EntityType.SMALL_FIREBALL &&
-                e != EntityType.ENDER_PEARL &&
-                e != EntityType.ENDER_SIGNAL &&
-                e != EntityType.SPLASH_POTION &&
-                e != EntityType.THROWN_EXP_BOTTLE &&
-                e != EntityType.ITEM_FRAME &&
-                e != EntityType.WITHER_SKULL &&
-                e != EntityType.PRIMED_TNT &&
-                e != EntityType.FALLING_BLOCK &&
-                e != EntityType.FIREWORK &&
-                e != EntityType.SPECTRAL_ARROW &&
-                e != EntityType.SHULKER_BULLET &&
-                e != EntityType.DRAGON_FIREBALL &&
-                e != EntityType.ARMOR_STAND &&
-                e != EntityType.EVOKER_FANGS &&
-                e != EntityType.MINECART_COMMAND &&
-                e != EntityType.ILLUSIONER &&
-                e != EntityType.BOAT &&
-                e != EntityType.MINECART &&
-                e != EntityType.MINECART_CHEST &&
-                e != EntityType.MINECART_FURNACE &&
-                e != EntityType.MINECART_TNT &&
-                e != EntityType.MINECART_HOPPER &&
-                e != EntityType.MINECART_MOB_SPAWNER &&
-                e != EntityType.LLAMA_SPIT &&
-                e != EntityType.ENDER_CRYSTAL &&
-                asMyEnum("TRIDENT") && e != EntityType.TRIDENT &&
-                e != EntityType.FISHING_HOOK &&
-                e != EntityType.LIGHTNING &&
-                e != EntityType.PLAYER &&
-                e != EntityType.GLOW_ITEM_FRAME &&
-                e != EntityType.MARKER &&
-                e != EntityType.CHEST_BOAT &&
-                e != EntityType.BLOCK_DISPLAY &&
-                e != EntityType.INTERACTION &&
-                e != EntityType.ITEM_DISPLAY &&
-                e != EntityType.TEXT_DISPLAY &&
-                e != EntityType.UNKNOWN;
+    public static EntityType resolveEntityType(String name) {
+        if (name == null) {
+            return null;
+        }
+
+        String normalizedName = normalizeEntityTypeName(name);
+        for (EntityType entityType : EntityType.values()) {
+            if (entityType.name().equalsIgnoreCase(normalizedName)) {
+                return entityType;
+            }
+        }
+        return null;
+    }
+
+    public static boolean matchesEntityTypeName(String name, EntityType entityType) {
+        return entityType != null && normalizeEntityTypeName(name).equalsIgnoreCase(entityType.name());
+    }
+
+    public static String normalizeEntityTypeName(String name) {
+        if (name == null) {
+            return "";
+        }
+
+        String upperName = name.trim().toUpperCase();
+        return ENTITY_TYPE_ALIASES.getOrDefault(upperName, upperName);
+    }
+
+    private static Map<String, String> createEntityTypeAliases() {
+        Map<String, String> aliases = new HashMap<>();
+
+        aliases.put("DROPPED_ITEM", "ITEM");
+        aliases.put("LEASH_HITCH", "LEASH_KNOT");
+        aliases.put("ENDER_SIGNAL", "EYE_OF_ENDER");
+        aliases.put("SPLASH_POTION", "POTION");
+        aliases.put("THROWN_EXP_BOTTLE", "EXPERIENCE_BOTTLE");
+        aliases.put("PRIMED_TNT", "TNT");
+        aliases.put("FIREWORK", "FIREWORK_ROCKET");
+        aliases.put("MINECART_COMMAND", "COMMAND_BLOCK_MINECART");
+        aliases.put("MINECART_CHEST", "CHEST_MINECART");
+        aliases.put("MINECART_FURNACE", "FURNACE_MINECART");
+        aliases.put("MINECART_TNT", "TNT_MINECART");
+        aliases.put("MINECART_HOPPER", "HOPPER_MINECART");
+        aliases.put("MINECART_MOB_SPAWNER", "SPAWNER_MINECART");
+        aliases.put("ENDER_CRYSTAL", "END_CRYSTAL");
+        aliases.put("FISHING_HOOK", "FISHING_BOBBER");
+        aliases.put("LIGHTNING", "LIGHTNING_BOLT");
+        aliases.put("PIG_ZOMBIE", "ZOMBIFIED_PIGLIN");
+
+        return aliases;
+    }
+
+    private static Set<String> createNonUsefulEntityTypes() {
+        return new HashSet<>(Arrays.asList(
+                "ITEM",
+                "EXPERIENCE_ORB",
+                "AREA_EFFECT_CLOUD",
+                "EGG",
+                "LEASH_KNOT",
+                "PAINTING",
+                "ARROW",
+                "SNOWBALL",
+                "FIREBALL",
+                "SMALL_FIREBALL",
+                "ENDER_PEARL",
+                "EYE_OF_ENDER",
+                "POTION",
+                "EXPERIENCE_BOTTLE",
+                "ITEM_FRAME",
+                "WITHER_SKULL",
+                "TNT",
+                "FALLING_BLOCK",
+                "FIREWORK_ROCKET",
+                "SPECTRAL_ARROW",
+                "SHULKER_BULLET",
+                "DRAGON_FIREBALL",
+                "ARMOR_STAND",
+                "EVOKER_FANGS",
+                "COMMAND_BLOCK_MINECART",
+                "ILLUSIONER",
+                "BOAT",
+                "MINECART",
+                "CHEST_MINECART",
+                "FURNACE_MINECART",
+                "TNT_MINECART",
+                "HOPPER_MINECART",
+                "SPAWNER_MINECART",
+                "LLAMA_SPIT",
+                "END_CRYSTAL",
+                "TRIDENT",
+                "FISHING_BOBBER",
+                "LIGHTNING_BOLT",
+                "PLAYER",
+                "GLOW_ITEM_FRAME",
+                "MARKER",
+                "CHEST_BOAT",
+                "BLOCK_DISPLAY",
+                "INTERACTION",
+                "ITEM_DISPLAY",
+                "TEXT_DISPLAY",
+                "UNKNOWN"
+        ));
     }
 }

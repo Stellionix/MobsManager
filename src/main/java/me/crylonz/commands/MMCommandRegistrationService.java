@@ -47,7 +47,7 @@ public class MMCommandRegistrationService extends MMCommandRegistration {
     public void registerInfo() {
         registerCommand("mobsmanager info {0} {1}", "mobsmanager.info", () -> {
             mobsData.stream()
-                    .filter(mobData -> mobData.getName().equalsIgnoreCase(args[1]))
+                    .filter(mobData -> MobsManager.matchesEntityTypeName(args[1], MobsManager.resolveEntityType(mobData.getName())))
                     .filter(mobData -> mobData.getWorldName().equalsIgnoreCase(args[2]))
                     .forEach(data -> {
                         sender.sendMessage(ChatColor.WHITE + "[MobsManager] Details of " + ChatColor.GOLD + data.getName() + ChatColor.WHITE + " spawning options on " + ChatColor.GOLD + data.getWorldName());
@@ -107,45 +107,47 @@ public class MMCommandRegistrationService extends MMCommandRegistration {
 
     private boolean enableOrDisableMob(String mobs, boolean state, MMSpawnType type, String worldName) {
         AtomicBoolean updated = new AtomicBoolean(false);
-        Arrays.stream(EntityType.values())
-                .filter(MobsManager::isUsefulEntity)
-                .filter(entity -> entity.name().equalsIgnoreCase(mobs))
-                .forEach(entity -> mobsData
-                        .stream()
-                        .filter(mobData -> mobData.getName().equalsIgnoreCase(entity.name()))
-                        .filter(mobData -> mobData.getWorldName().equalsIgnoreCase(worldName) || worldName.equalsIgnoreCase("*"))
-                        .forEach(mobData -> {
-                                    updated.set(true);
-                                    switch (type) {
-                                        case ALL:
-                                            mobData.setAllSpawn(state);
-                                            break;
-                                        case CUSTOM:
-                                            mobData.setCustomSpawn(state);
-                                            break;
-                                        case NATURAL:
-                                            mobData.setNaturalSpawn(state);
-                                            break;
-                                        case SPAWNER:
-                                            mobData.setSpawnerSpawn(state);
-                                            break;
-                                        case EGG:
-                                            mobData.setEggSpawn(state);
-                                            break;
-                                        case BREEDING:
-                                            mobData.setBreedingSpawn(state);
-                                            break;
-                                        case IRON_GOLEM:
-                                            mobData.setIronGolemSpawn(state);
-                                            break;
-                                        default:
-                                            updated.set(false);
-                                            break;
-                                    }
-                                    fileManager.getMobsDataConfig().set("mobs", mobsData);
-                                    fileManager.saveMobsDataConfig();
-                                }
-                        ));
+        EntityType entity = MobsManager.resolveEntityType(mobs);
+        if (entity == null || !MobsManager.isUsefulEntity(entity)) {
+            return false;
+        }
+
+        mobsData.stream()
+                .filter(mobData -> MobsManager.matchesEntityTypeName(mobData.getName(), entity))
+                .filter(mobData -> mobData.getWorldName().equalsIgnoreCase(worldName) || worldName.equalsIgnoreCase("*"))
+                .forEach(mobData -> {
+                            updated.set(true);
+                            switch (type) {
+                                case ALL:
+                                    mobData.setAllSpawn(state);
+                                    break;
+                                case CUSTOM:
+                                    mobData.setCustomSpawn(state);
+                                    break;
+                                case NATURAL:
+                                    mobData.setNaturalSpawn(state);
+                                    break;
+                                case SPAWNER:
+                                    mobData.setSpawnerSpawn(state);
+                                    break;
+                                case EGG:
+                                    mobData.setEggSpawn(state);
+                                    break;
+                                case BREEDING:
+                                    mobData.setBreedingSpawn(state);
+                                    break;
+                                case IRON_GOLEM:
+                                    mobData.setIronGolemSpawn(state);
+                                    break;
+                                default:
+                                    updated.set(false);
+                                    break;
+                            }
+                            mobData.setName(entity.name());
+                            fileManager.getMobsDataConfig().set("mobs", mobsData);
+                            fileManager.saveMobsDataConfig();
+                        }
+                );
 
         return updated.get();
     }

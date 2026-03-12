@@ -1,2 +1,5 @@
+/.gradle/
+/build/
 /target/
 /MobsManager.iml
+/.idea/
