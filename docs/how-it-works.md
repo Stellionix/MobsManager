@@ -1,26 +1,38 @@
-## MobsManager - How it works ?
+# MobsManager - How It Works
 
-This section describes the behavior of the plugin.
+This page explains the core behavior of the plugin.
 
-### Default behaviour
+## Default Behavior
 
-The plugin prevent the spawn of entities that you have disabled. It's works per world.
+MobsManager blocks the spawn of entities that you have disabled through its data file and commands.
+Rules are applied per world, so each world can keep its own spawn policy.
 
-> Import note : Existing entities are not deleted.
+!!! note
+    Existing entities are not removed automatically just because future spawning has been disabled.
 
-### Spawn Type
+## Spawn Categories
 
-When you want to disable the spawning of a mob, you have several way.
+MobsManager groups Minecraft spawn reasons into a small set of categories:
 
-+ **ALL** : Every kind of spawning is disabled
-+ **NATURAL** : When something spawns from natural means
-+ **CUSTOM** When an entity is missing a SpawnReason
-+ **SPAWNER**  When a creature spawns from a spawner
-+ **SPAWNER_EGG** When a creature spawns from an egg
-+ **BREEDING** When an animal breeds to create a child
-+ **BUILD_IRONGOLEM** When an iron golem is spawned by being built
+- `ALL`: blocks every kind of spawn
+- `NATURAL`: blocks natural or world-driven spawning
+- `CUSTOM`: blocks command, plugin, transformation, or other non-natural spawning
+- `SPAWNER`: blocks spawner-driven spawning, including modern spawner variants
+- `EGG`: blocks spawn egg and related egg-based spawning
+- `BREEDING`: blocks animal breeding results
+- `IRON_GOLEM`: blocks spawns triggered by building an iron golem
 
-> BUILD_IRONGOLEM is a spawn reason that have sense only for the Iron Golem entity but this is possible for any plugin to spawn another entity when a IRON GOLEM is build. This is why this spawn reason can also be disabled for other entities.
+## Newer Minecraft Spawn Reasons
 
-### Next step
-See [configuration part](https://apavarino.github.io/MobsManager/configuration) or go to [home page](https://apavarino.github.io/MobsManager)
+Minecraft and Spigot keep introducing new spawn reasons. MobsManager maps newer reasons to the existing categories so that older configurations remain usable without being rewritten from scratch.
+
+Examples:
+
+- `TRIAL_SPAWNER` is treated as `SPAWNER`
+- `DISPENSE_EGG` is treated as `EGG`
+- `COMMAND` is treated as `CUSTOM`
+- `REINFORCEMENTS` is treated as `NATURAL`
+
+## World-by-World Management
+
+Each entity is tracked per world. This means you can allow a mob in one world while blocking the same mob in another.

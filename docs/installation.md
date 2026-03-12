@@ -1,16 +1,28 @@
-## MobsManager - Installation
+# MobsManager - Installation
 
-Make sure you have [downloaded](https://apavarino.github.io/MobsManager/download) the plugin before reading this step.
+Make sure you have already [downloaded](download.md) the plugin before following these steps.
 
-All you have to do it is to put the `MobsManager-X.X.X.jar` in the `plugins` folder and start your server.
+## Installation Steps
 
-If everything goes well, you should see on the console
+1. Download the `MobsManager-X.X.X.jar` file.
+2. Place it in your server's `plugins` directory.
+3. Start or restart the server.
 
-```
+If everything loads correctly, the console should show a message similar to:
+
+```text
 [MobsManager] Enabling MobsManager vX.X.X
 ```
 
-if you have any error, make sure to match the requirement. If needed, you can ask help on Discord
+## After Startup
 
-### Next step
-See [how it works part](https://apavarino.github.io/MobsManager/how-it-works) or go to [home page](https://apavarino.github.io/MobsManager)
+On first start, the plugin generates its configuration files and initializes per-world entity data.
+
+If you are updating from an older version, MobsManager may migrate older entity names automatically so your stored configuration stays compatible with newer APIs.
+
+## If Startup Fails
+
+- verify that your server software is compatible
+- verify that the server is running Java 17+
+- check the startup log for dependency or API errors
+- ask for help on Discord if needed

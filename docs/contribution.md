@@ -1,12 +1,26 @@
-## MobsManager - Contribution
+# MobsManager - Contribution
 
-### GitHub
+Contributions are welcome.
 
-You can propose some change or improvement on GitHub by making pull request. Please explain what you do and why.
+If you want to improve the plugin, fix a bug, or refine the documentation, open a pull request on GitHub and explain clearly what changed and why.
 
-### PayPal
+## Before Opening a Pull Request
 
-If you like my works you can make a donation on PayPal [here](https://www.paypal.com/cgi-bin/webscr?return=https://dev.bukkit.org/projects/322434?gameCategorySlug=bukkit-plugins&amp;projectSlug=MobsManager&amp;cn=Add+special+instructions+to+the+addon+author()&amp;business=arthur.pavarino%40gmail.com&amp;bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHosted&amp;cancel_return=https://dev.bukkit.org/projects/322434?gameCategorySlug=bukkit-plugins&amp;projectSlug=MobsManager&amp;lc=US&amp;item_name=MobsManager+(from+bukkit.org)&amp;cmd=_donations&amp;rm=1&amp;no_shipping=1&amp;currency_code=USD)
+- make sure the project builds successfully
+- run the test suite
+- update the documentation if your change affects commands, configuration, compatibility, or behavior
 
-### Next step
-Go to [home page](https://apavarino.github.io/MobsManager)
+## Local Commands
+
+```bash
+./gradlew build
+./gradlew test
+```
+
+## General Expectations
+
+- keep pull requests focused and reviewable
+- preserve compatibility unless the change explicitly introduces a migration path
+- document important user-facing changes
+
+For repository-wide contribution guidelines, see [CONTRIBUTING.md on GitHub](https://github.com/stellionix/MobsManager/blob/master/CONTRIBUTING.md).
