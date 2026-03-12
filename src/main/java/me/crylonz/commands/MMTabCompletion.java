@@ -4,14 +4,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static me.crylonz.MobsManager.MMSpawnType;
-import static me.crylonz.MobsManager.isUsefulEntity;
+import static me.crylonz.MobsManager.getUsefulEntityNames;
 
 public class MMTabCompletion implements TabCompleter {
 
@@ -34,17 +33,20 @@ public class MMTabCompletion implements TabCompleter {
                         list.add("disable");
                         list.add("enable");
                         list.add("info");
+                        list.add("status");
+                        list.add("list");
                     }
                 }
 
                 if (args.length == 2) {
-                    if (args[0].equals("disable") || args[0].equals("enable") || args[0].equals("info")) {
+                    if (args[0].equals("disable") || args[0].equals("enable") || args[0].equals("info") || args[0].equals("status")) {
                         if (player.hasPermission("mobsmanager.manageEntity")) {
-                            for (EntityType entity : EntityType.values()) {
-                                if (isUsefulEntity(entity)) {
-                                    list.add(entity.name());
-                                }
-                            }
+                            list.addAll(getUsefulEntityNames());
+                        }
+                    }
+                    if (args[0].equals("list")) {
+                        if (player.hasPermission("mobsmanager.manageEntity")) {
+                            Bukkit.getWorlds().forEach(world -> list.add(world.getName()));
                         }
                     }
                 }
@@ -57,7 +59,7 @@ public class MMTabCompletion implements TabCompleter {
                             }
                         }
                     }
-                    if (args[0].equals("info")) {
+                    if (args[0].equals("info") || args[0].equals("status")) {
                         if (player.hasPermission("mobsmanager.manageEntity")) {
                             Bukkit.getWorlds().forEach(world -> list.add(world.getName()));
                         }

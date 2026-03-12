@@ -20,6 +20,8 @@ public class MMCommandExecutor implements CommandExecutor {
 
         commandRegistration.registerReload();   // mm reload
         commandRegistration.registerHelp();     // mm help
+        commandRegistration.registerList();     // mm list
+        commandRegistration.registerStatus();   // mm status
         commandRegistration.registerInfo();     // mm info
         commandRegistration.registerDisable();  // mm disable
         commandRegistration.registerEnable();   // mm enable

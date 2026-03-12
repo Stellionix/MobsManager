@@ -3,14 +3,15 @@ package me.crylonz.commands;
 import me.crylonz.MobsData;
 import me.crylonz.MobsManager;
 import me.crylonz.MobsManager.MMSpawnType;
-
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.EntityType;
 import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static me.crylonz.MobsManager.*;
@@ -26,10 +27,7 @@ public class MMCommandRegistrationService extends MMCommandRegistration {
 
     public void registerReload() {
         registerCommand("mobsmanager reload", "mobsmanager.reload", () -> {
-            this.plugin.reloadConfig();
-            worldGuardDetection = plugin.getConfig().getBoolean("world-guard-detection");
-            fileManager.reloadMobsDataConfig();
-            mobsData = (ArrayList<MobsData>)fileManager.getMobsDataConfig().get("mobs");
+            ((MobsManager) plugin).reloadPluginState();
             sender.sendMessage(ChatColor.GREEN + "[MobsManager] Plugin reload successfully");
         });
     }
@@ -38,30 +36,39 @@ public class MMCommandRegistrationService extends MMCommandRegistration {
         registerCommand("mobsmanager help", "mobsmanager.help", () -> {
             sender.sendMessage("[MobsManager]" + ChatColor.GREEN + " List of command");
             sender.sendMessage(ChatColor.GOLD + "/mm reload" + ChatColor.WHITE + " Reload the plugin");
+            sender.sendMessage(ChatColor.GOLD + "/mm list <World>" + ChatColor.WHITE + " List managed entities for a world");
+            sender.sendMessage(ChatColor.GOLD + "/mm status <Entity> <World>" + ChatColor.WHITE + " Alias of /mm info");
             sender.sendMessage(ChatColor.GOLD + "/mm enable <Entity> <SpawnReason> <World> " + ChatColor.WHITE + "Enable spawning for a mob");
             sender.sendMessage(ChatColor.GOLD + "/mm disable <Entity> <SpawnReason> <World> " + ChatColor.WHITE + "Disable spawning for a mob");
             sender.sendMessage(ChatColor.GOLD + "/mm info <Entity> <World> " + ChatColor.WHITE + "Display spawning info of a mob");
         });
     }
 
-    public void registerInfo() {
-        registerCommand("mobsmanager info {0} {1}", "mobsmanager.info", () -> {
-            mobsData.stream()
-                    .filter(mobData -> MobsManager.matchesEntityTypeName(args[1], MobsManager.resolveEntityType(mobData.getName())))
-                    .filter(mobData -> mobData.getWorldName().equalsIgnoreCase(args[2]))
-                    .forEach(data -> {
-                        sender.sendMessage(ChatColor.WHITE + "[MobsManager] Details of " + ChatColor.GOLD + data.getName() + ChatColor.WHITE + " spawning options on " + ChatColor.GOLD + data.getWorldName());
-                        sender.sendMessage(ChatColor.WHITE + "-------------------");
-                        sender.sendMessage(ChatColor.WHITE + "All spawn type : " + (data.isAllSpawn() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF"));
-                        sender.sendMessage(ChatColor.WHITE + "Custom spawn type : " + (data.isCustomSpawn() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF"));
-                        sender.sendMessage(ChatColor.WHITE + "Egg spawn type : " + (data.isEggSpawn() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF"));
-                        sender.sendMessage(ChatColor.WHITE + "Natural spawn type : " + (data.isNaturalSpawn() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF"));
-                        sender.sendMessage(ChatColor.WHITE + "Spawner spawn type : " + (data.isSpawnerSpawn() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF"));
-                        sender.sendMessage(ChatColor.WHITE + "Breeding spawn type : " + (data.isBreedingSpawn() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF"));
-                        sender.sendMessage(ChatColor.WHITE + "Iron Golem spawn type : " + (data.isIronGolemSpawn() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF"));
-                        sender.sendMessage(ChatColor.WHITE + "-------------------");
-                    });
+    public void registerList() {
+        registerCommand("mobsmanager list {0}", "mobsmanager.info", () -> {
+            List<String> entities = mobsData.stream()
+                    .filter(mobData -> mobData.getWorldName().equalsIgnoreCase(args[1]))
+                    .map(MobsData::getName)
+                    .distinct()
+                    .sorted(Comparator.naturalOrder())
+                    .collect(Collectors.toList());
+
+            if (entities.isEmpty()) {
+                sender.sendMessage(ChatColor.RED + errorMsg);
+                return;
+            }
+
+            sender.sendMessage(ChatColor.WHITE + "[MobsManager] Managed entities on " + ChatColor.GOLD + args[1]);
+            sender.sendMessage(ChatColor.WHITE + String.join(ChatColor.GRAY + ", " + ChatColor.WHITE, entities));
         });
+    }
+
+    public void registerStatus() {
+        registerCommand("mobsmanager status {0} {1}", "mobsmanager.info", this::displayMobInfo);
+    }
+
+    public void registerInfo() {
+        registerCommand("mobsmanager info {0} {1}", "mobsmanager.info", this::displayMobInfo);
     }
 
     public void registerDisable() {
@@ -150,5 +157,30 @@ public class MMCommandRegistrationService extends MMCommandRegistration {
                 );
 
         return updated.get();
+    }
+
+    private void displayMobInfo() {
+        List<MobsData> matches = mobsData.stream()
+                .filter(mobData -> MobsManager.matchesEntityTypeName(args[1], MobsManager.resolveEntityType(mobData.getName())))
+                .filter(mobData -> mobData.getWorldName().equalsIgnoreCase(args[2]))
+                .collect(Collectors.toList());
+
+        if (matches.isEmpty()) {
+            sender.sendMessage(ChatColor.RED + errorMsg);
+            return;
+        }
+
+        matches.forEach(data -> {
+            sender.sendMessage(ChatColor.WHITE + "[MobsManager] Details of " + ChatColor.GOLD + data.getName() + ChatColor.WHITE + " spawning options on " + ChatColor.GOLD + data.getWorldName());
+            sender.sendMessage(ChatColor.WHITE + "-------------------");
+            sender.sendMessage(ChatColor.WHITE + "All spawn type : " + (data.isAllSpawn() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF"));
+            sender.sendMessage(ChatColor.WHITE + "Custom spawn type : " + (data.isCustomSpawn() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF"));
+            sender.sendMessage(ChatColor.WHITE + "Egg spawn type : " + (data.isEggSpawn() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF"));
+            sender.sendMessage(ChatColor.WHITE + "Natural spawn type : " + (data.isNaturalSpawn() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF"));
+            sender.sendMessage(ChatColor.WHITE + "Spawner spawn type : " + (data.isSpawnerSpawn() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF"));
+            sender.sendMessage(ChatColor.WHITE + "Breeding spawn type : " + (data.isBreedingSpawn() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF"));
+            sender.sendMessage(ChatColor.WHITE + "Iron Golem spawn type : " + (data.isIronGolemSpawn() ? ChatColor.GREEN + "ON" : ChatColor.RED + "OFF"));
+            sender.sendMessage(ChatColor.WHITE + "-------------------");
+        });
     }
 }

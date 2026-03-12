@@ -1,6 +1,7 @@
 package me.crylonz;
 
 import org.bukkit.entity.EntityType;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -36,5 +37,25 @@ class MobsManagerTest {
         assertTrue(MobsManager.matchesEntityTypeName("DROPPED_ITEM", EntityType.ITEM));
         assertTrue(MobsManager.matchesEntityTypeName("MINECART_CHEST", EntityType.CHEST_MINECART));
         assertTrue(MobsManager.matchesEntityTypeName("PIG_ZOMBIE", EntityType.ZOMBIFIED_PIGLIN));
+    }
+
+    @Test
+    void shouldCancelSpawnMapsNewReasonsToExistingCategories() {
+        MobsData mob = new MobsData("ZOMBIE", "world", true, false, false, false, false, false, false);
+
+        assertTrue(MobsManager.shouldCancelSpawn(mob, CreatureSpawnEvent.SpawnReason.TRIAL_SPAWNER));
+        assertTrue(MobsManager.shouldCancelSpawn(mob, CreatureSpawnEvent.SpawnReason.COMMAND));
+        assertTrue(MobsManager.shouldCancelSpawn(mob, CreatureSpawnEvent.SpawnReason.DISPENSE_EGG));
+        assertTrue(MobsManager.shouldCancelSpawn(mob, CreatureSpawnEvent.SpawnReason.REINFORCEMENTS));
+    }
+
+    @Test
+    void shouldCancelSpawnAllowsConfiguredCategory() {
+        MobsData mob = new MobsData("ZOMBIE", "world", true, true, true, true, true, true, true);
+
+        assertFalse(MobsManager.shouldCancelSpawn(mob, CreatureSpawnEvent.SpawnReason.TRIAL_SPAWNER));
+        assertFalse(MobsManager.shouldCancelSpawn(mob, CreatureSpawnEvent.SpawnReason.COMMAND));
+        assertFalse(MobsManager.shouldCancelSpawn(mob, CreatureSpawnEvent.SpawnReason.DISPENSE_EGG));
+        assertFalse(MobsManager.shouldCancelSpawn(mob, CreatureSpawnEvent.SpawnReason.BUILD_IRONGOLEM));
     }
 }

@@ -18,8 +18,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -42,19 +44,13 @@ public class MobsManager extends JavaPlugin implements Listener {
     }
 
 
+    @Override
     public void onEnable() {
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvents(this, this);
         fileManager = new FileManager(this);
 
         Metrics metrics = new Metrics(this, 15773);
-
-        Bukkit.getWorlds().forEach(world -> {
-            for (EntityType entity : EntityType.values()) {
-                if (isUsefulEntity(entity))
-                    mobsData.add(new MobsData(entity.name(), world.getName(), true, true, true, true, true, true, true));
-            }
-        });
 
         //Updater from 4.X to 5.X
         if (!fileManager.getMobsDataFile().exists() && fileManager.getConfigFile().exists()) {
@@ -86,6 +82,8 @@ public class MobsManager extends JavaPlugin implements Listener {
             config.updateConfig();
         }
 
+        reloadPluginState();
+
         if (config.getBoolean("auto-update")) {
             MobsManagerUpdater updater = new MobsManagerUpdater(this, 322365, this.getFile(), MobsManagerUpdater.UpdateType.DEFAULT, true);
         }
@@ -101,6 +99,23 @@ public class MobsManager extends JavaPlugin implements Listener {
     public void registerConfig() {
         config.register("auto-update", true);
         config.register("world-guard-detection", false);
+    }
+
+    public void reloadPluginState() {
+        reloadConfig();
+        fileManager.reloadMobsDataConfig();
+        worldGuardDetection = config.getBoolean("world-guard-detection");
+
+        ArrayList<MobsData> refreshed = createDefaultMobsData();
+        boolean migrated = mergeStoredMobsData(refreshed);
+
+        mobsData = refreshed;
+        fileManager.getMobsDataConfig().set("mobs", mobsData);
+        fileManager.saveMobsDataConfig();
+
+        if (migrated) {
+            log.info("[MobsManager] Legacy entity names were migrated to current API names.");
+        }
     }
 
     public void onDisable() {
@@ -125,23 +140,7 @@ public class MobsManager extends JavaPlugin implements Listener {
                         if (!mobData.isAllSpawn()) {
                             return true;
                         } else {
-                            switch (e.getSpawnReason()) {
-                                case NATURAL:
-                                case DEFAULT:
-                                    return !mobData.isNaturalSpawn();
-                                case CUSTOM:
-                                    return !mobData.isCustomSpawn();
-                                case SPAWNER:
-                                    return !mobData.isSpawnerSpawn();
-                                case SPAWNER_EGG:
-                                    return !mobData.isEggSpawn();
-                                case BREEDING:
-                                    return !mobData.isBreedingSpawn();
-                                case BUILD_IRONGOLEM:
-                                    return !mobData.isIronGolemSpawn();
-                                default:
-                                    return false;
-                            }
+                            return shouldCancelSpawn(mobData, e.getSpawnReason());
                         }
                     });
             e.setCancelled(isCancelled.orElse(false));
@@ -227,6 +226,59 @@ public class MobsManager extends JavaPlugin implements Listener {
         return entityType != null && normalizeEntityTypeName(name).equalsIgnoreCase(entityType.name());
     }
 
+    public static boolean shouldCancelSpawn(MobsData mobData, CreatureSpawnEvent.SpawnReason spawnReason) {
+        switch (spawnReason) {
+            case NATURAL:
+            case DEFAULT:
+            case CHUNK_GEN:
+            case JOCKEY:
+            case LIGHTNING:
+            case SLIME_SPLIT:
+            case NETHER_PORTAL:
+            case SILVERFISH_BLOCK:
+            case DROWNED:
+            case RAID:
+            case PATROL:
+            case BEEHIVE:
+            case FROZEN:
+            case REINFORCEMENTS:
+                return !mobData.isNaturalSpawn();
+            case CUSTOM:
+            case COMMAND:
+            case SPELL:
+            case POTION_EFFECT:
+            case ENCHANTMENT:
+            case SHOULDER_ENTITY:
+            case DUPLICATION:
+            case METAMORPHOSIS:
+            case INFECTION:
+            case CURED:
+            case OCELOT_BABY:
+            case MOUNT:
+            case TRAP:
+            case EXPLOSION:
+            case PIGLIN_ZOMBIFIED:
+            case BUILD_SNOWMAN:
+            case BUILD_WITHER:
+            case VILLAGE_DEFENSE:
+            case VILLAGE_INVASION:
+                return !mobData.isCustomSpawn();
+            case SPAWNER:
+            case TRIAL_SPAWNER:
+                return !mobData.isSpawnerSpawn();
+            case EGG:
+            case SPAWNER_EGG:
+            case DISPENSE_EGG:
+                return !mobData.isEggSpawn();
+            case BREEDING:
+                return !mobData.isBreedingSpawn();
+            case BUILD_IRONGOLEM:
+                return !mobData.isIronGolemSpawn();
+            default:
+                return false;
+        }
+    }
+
     public static String normalizeEntityTypeName(String name) {
         if (name == null) {
             return "";
@@ -258,6 +310,55 @@ public class MobsManager extends JavaPlugin implements Listener {
         aliases.put("PIG_ZOMBIE", "ZOMBIFIED_PIGLIN");
 
         return aliases;
+    }
+
+    public static List<String> getUsefulEntityNames() {
+        ArrayList<String> entities = new ArrayList<>();
+        for (EntityType entity : EntityType.values()) {
+            if (isUsefulEntity(entity)) {
+                entities.add(entity.name());
+            }
+        }
+        entities.sort(Comparator.naturalOrder());
+        return entities;
+    }
+
+    private ArrayList<MobsData> createDefaultMobsData() {
+        ArrayList<MobsData> defaults = new ArrayList<>();
+        Bukkit.getWorlds().forEach(world -> {
+            for (EntityType entity : EntityType.values()) {
+                if (isUsefulEntity(entity)) {
+                    defaults.add(new MobsData(entity.name(), world.getName(), true, true, true, true, true, true, true));
+                }
+            }
+        });
+        return defaults;
+    }
+
+    private boolean mergeStoredMobsData(ArrayList<MobsData> target) {
+        Object rawMobs = fileManager.getMobsDataConfig().get("mobs");
+        if (!(rawMobs instanceof ArrayList<?>)) {
+            return false;
+        }
+
+        boolean migrated = false;
+        ArrayList<?> tmp = (ArrayList<?>) rawMobs;
+        ArrayList<MobsData> stored = new ArrayList<>();
+        for (Object entry : tmp) {
+            if (entry instanceof MobsData) {
+                MobsData mobData = (MobsData) entry;
+                String normalizedName = normalizeEntityTypeName(mobData.getName());
+                if (!normalizedName.equalsIgnoreCase(mobData.getName())) {
+                    mobData.setName(normalizedName);
+                    migrated = true;
+                }
+                stored.add(mobData);
+            }
+        }
+
+        target.removeAll(stored);
+        target.addAll(stored);
+        return migrated;
     }
 
     private static Set<String> createNonUsefulEntityTypes() {
