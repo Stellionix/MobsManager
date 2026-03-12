@@ -755,9 +755,9 @@
 <td>Alias of <code>/mm info</code>.</td>
 </tr>
 <tr>
-<td><code>/mm list &lt;World&gt;</code></td>
+<td><code>/mm list &lt;World&gt; [Mode] [Page]</code></td>
 <td><code>mobsmanager.info</code></td>
-<td>Lists the managed entities for a world.</td>
+<td>Lists entities for a world. Modes: <code>changed</code>, <code>blocked</code>, <code>all</code>.</td>
 </tr>
 <tr>
 <td><code>/mm help</code></td>
@@ -798,6 +798,9 @@
 <li>Entity names use Bukkit <code>EntityType</code> names.</li>
 <li>Legacy entity names are still recognized by the compatibility layer.</li>
 <li>Use <code>*</code> as the world argument when a command supports targeting all worlds.</li>
+<li><code>/mm list &lt;World&gt;</code> shows changed entities by default.</li>
+<li><code>/mm list &lt;World&gt; blocked</code> shows only restricted entities.</li>
+<li><code>/mm list &lt;World&gt; all</code> shows every managed entity for the world.</li>
 </ul>
 
 
