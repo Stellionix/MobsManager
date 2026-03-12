@@ -13,7 +13,7 @@ This page documents the current `/mm` command set and the related permission nod
 | `/mm disable <Mob> <SpawnReason> <World>` | `mobsmanager.manageEntity` | Disables one spawn category for an entity. |
 | `/mm info <Mob> <World>` | `mobsmanager.info` | Displays the current spawn configuration for one entity. |
 | `/mm status <Mob> <World>` | `mobsmanager.info` | Alias of `/mm info`. |
-| `/mm list <World>` | `mobsmanager.info` | Lists the managed entities for a world. |
+| `/mm list <World> [Mode] [Page]` | `mobsmanager.info` | Lists entities for a world. Modes: `changed`, `blocked`, `all`. |
 | `/mm help` | `mobsmanager.help` | Displays the built-in command help. |
 
 ## Permission Nodes
@@ -30,3 +30,6 @@ This page documents the current `/mm` command set and the related permission nod
 - Entity names use Bukkit `EntityType` names.
 - Legacy entity names are still recognized by the compatibility layer.
 - Use `*` as the world argument when a command supports targeting all worlds.
+- `/mm list <World>` shows changed entities by default.
+- `/mm list <World> blocked` shows only restricted entities.
+- `/mm list <World> all` shows every managed entity for the world.

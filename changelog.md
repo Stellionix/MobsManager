@@ -1,11 +1,4 @@
-MobsManager 5.6.0
 
-+ Added GitHub Actions CI for build and unit tests
-+ Added `/mm list <world>` and `/mm status <entity> <world>` commands
-+ Added compatibility layer for legacy entity type names on newer Spigot APIs
-+ Added automatic normalization of legacy entity names from persisted config
-+ Added support for newer spawn reasons by mapping them to existing spawn categories
-+ Improved `/mm reload` to rebuild in-memory data safely
 
 MobsManager 5.1.0
 

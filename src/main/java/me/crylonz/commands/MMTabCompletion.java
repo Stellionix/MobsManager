@@ -64,10 +64,23 @@ public class MMTabCompletion implements TabCompleter {
                             Bukkit.getWorlds().forEach(world -> list.add(world.getName()));
                         }
                     }
+                    if (args[0].equals("list")) {
+                        if (player.hasPermission("mobsmanager.manageEntity")) {
+                            list.add("changed");
+                            list.add("blocked");
+                            list.add("all");
+                        }
+                    }
                 }
 
                 if (args.length == 4) {
-                    if (!args[0].equals("info")) {
+                    if (args[0].equals("list")) {
+                        if (player.hasPermission("mobsmanager.manageEntity")) {
+                            list.add("1");
+                            list.add("2");
+                            list.add("3");
+                        }
+                    } else if (!args[0].equals("info")) {
                         if (player.hasPermission("mobsmanager.manageEntity")) {
                             Bukkit.getWorlds().forEach(world -> list.add(world.getName()));
                             list.add("*");
