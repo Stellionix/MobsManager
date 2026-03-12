@@ -4,7 +4,7 @@
 
 <h2  align="center">
     <img src="http://cf.way2muchnoise.eu/full_322365_downloads.svg" alt="download"/>
-    <a href="https://github.com/stellionix/mobsmanager/actions/workflows/ci.yml"><img src=https://github.com/stellionix/mobsmanager/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+    <a href="https://github.com/stellionix/mobsmanager/actions/workflows/ci.yml"><img src=https://github.com/stellionix/mobsmanager/actions/workflows/ci.yml/badge.svg alt="CI"/></a>
     <img src="https://img.shields.io/github/license/stellionix/MobsManager" alt="licence"/>
     <img src="https://img.shields.io/github/last-commit/stellionix/MobsManager" alt="commit"/> 
 </h2>
