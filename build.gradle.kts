@@ -66,3 +66,9 @@ tasks.build {
 tasks.test {
     useJUnitPlatform()
 }
+
+tasks.register("printVersion") {
+    doLast {
+        println(project.version)
+    }
+}
