@@ -3,11 +3,14 @@ name: Docs
 on:
   push:
     branches:
-      - master
       - main
-    tags:
-      - "v*"
-      - "*.*.*"
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "requirements.txt"
+      - "build.gradle.kts"
+      - "src/main/resources/plugin.yml"
+      - ".github/workflows/docs.yml"
   workflow_dispatch:
 
 permissions:
@@ -15,38 +18,4 @@ permissions:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install documentation dependencies
-        run: pip install -r requirements.txt
-
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Resolve documentation version
-        id: version
-        run: |
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            VERSION="${GITHUB_REF_NAME#v}"
-          else
-            VERSION=$(python -c "import pathlib,re; content=pathlib.Path('src/main/resources/plugin.yml').read_text(encoding='utf-8'); match=re.search(r'version:\\s*\\\"([^\\\"]+)\\\"', content); print(match.group(1) if match else (_ for _ in ()).throw(SystemExit('Unable to resolve version from plugin.yml')))")
-          fi
-          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
-
-      - name: Deploy versioned docs
-        run: |
-          mike deploy --push --update-aliases "${{ steps.version.outputs.version }}" latest
-          mike set-default --push latest
+    uses: Stellionix/docs-common/.github/workflows/deploy-docs.yml@main
