@@ -9,6 +9,7 @@
 <p align="center">
     <img src="http://cf.way2muchnoise.eu/full_322365_downloads.svg" alt="Downloads"/>
     <a href="https://github.com/stellionix/MobsManager/actions/workflows/ci.yml"><img src="https://github.com/stellionix/MobsManager/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+    <a href="https://stellionix.github.io/MobsManager/"><img src="https://img.shields.io/badge/docs-online-blue" alt="Docs"/></a>
     <img src="https://img.shields.io/github/license/stellionix/MobsManager" alt="License"/>
     <img src="https://img.shields.io/github/last-commit/stellionix/MobsManager" alt="Last commit"/>
 </p>
